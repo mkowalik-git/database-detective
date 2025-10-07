@@ -123,7 +123,7 @@ Simpler than ordering coffee:
 **Option 2: The "I'm Fancy" Approach**
 ```bash
 # Clone this repository
-git clone https://github.com/yourusername/database-detective.git
+git clone https://github.com/mkowalik-git/database-detective.git
 
 # Open the file
 open database-detective.html
@@ -153,7 +153,7 @@ python -m http.server 8000
 
 ## 🎬 Real-World Applications
 
-"But why do I need SQL?" - You, probably
+"But why do I need SQL?"
 
 Once you've mastered Database Detective, you can:
 
