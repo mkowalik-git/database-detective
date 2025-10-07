@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Detective</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Lucide icons as SVG components
+        const Database = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                <path d="M3 5V19A9 3 0 0 0 21 19V5"></path>
+                <path d="M3 12A9 3 0 0 0 21 12"></path>
+            </svg>
+        );
+
+        const Search = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+            </svg>
+        );
+
+        const CheckCircle = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+        );
+
+        const XCircle = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="m15 9-6 6"></path>
+                <path d="m9 9 6 6"></path>
+            </svg>
+        );
+
+        const ArrowRight = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14"></path>
+                <path d="m12 5 7 7-7 7"></path>
+            </svg>
+        );
+
+        const DatabaseDetective = () => {
+            const [currentLevel, setCurrentLevel] = useState(0);
+            const [playerQuery, setPlayerQuery] = useState('');
+            const [feedback, setFeedback] = useState(null);
+            const [completedLevels, setCompletedLevels] = useState([]);
+            const [queryResult, setQueryResult] = useState(null);
+
+            const levels = [
+                {
+                    id: 0,
+                    title: "The Missing Employee",
+                    story: "Welcome, Detective! The CEO's assistant has gone missing. We need to find information about employee 'Sarah Chen' in our database. Can you help?",
+                    database: {
+                        name: "employees",
+                        columns: ["id", "name", "department", "hire_date"],
+                        data: [
+                            { id: 1, name: "John Smith", department: "Sales", hire_date: "2020-01-15" },
+                            { id: 2, name: "Sarah Chen", department: "Engineering", hire_date: "2019-06-20" },
+                            { id: 3, name: "Mike Johnson", department: "HR", hire_date: "2021-03-10" }
+                        ]
+                    },
+                    hint: "Use SELECT to retrieve data. Try: SELECT * FROM employees WHERE name = 'Sarah Chen'",
+                    correctPattern: /SELECT.*FROM\s+employees.*WHERE.*name.*Sarah Chen/i,
+                    concept: "SELECT & WHERE clauses",
+                    explanation: "Great! You used SELECT to retrieve data and WHERE to filter results. This is how we query specific records from a database table."
+                },
+                {
+                    id: 1,
+                    title: "The Department Mystery",
+                    story: "Sarah worked in Engineering, but we need to find ALL engineers to interview them. Can you retrieve everyone from the Engineering department?",
+                    database: {
+                        name: "employees",
+                        columns: ["id", "name", "department", "hire_date"],
+                        data: [
+                            { id: 1, name: "John Smith", department: "Sales", hire_date: "2020-01-15" },
+                            { id: 2, name: "Sarah Chen", department: "Engineering", hire_date: "2019-06-20" },
+                            { id: 3, name: "Mike Johnson", department: "HR", hire_date: "2021-03-10" },
+                            { id: 4, name: "Lisa Wang", department: "Engineering", hire_date: "2020-08-05" }
+                        ]
+                    },
+                    hint: "Filter by department: SELECT * FROM employees WHERE department = 'Engineering'",
+                    correctPattern: /SELECT.*FROM\s+employees.*WHERE.*department.*Engineering/i,
+                    concept: "Filtering with WHERE",
+                    explanation: "Excellent! You filtered multiple records using WHERE. This returns all rows matching your condition."
+                },
+                {
+                    id: 2,
+                    title: "Connecting the Dots",
+                    story: "We found a mysterious access log, but it only has employee IDs! We need to JOIN it with the employees table to see WHO accessed the secure server.",
+                    database: {
+                        name: "Two tables to connect",
+                        tables: [
+                            {
+                                name: "employees",
+                                columns: ["id", "name", "department"],
+                                data: [
+                                    { id: 1, name: "John Smith", department: "Sales" },
+                                    { id: 2, name: "Sarah Chen", department: "Engineering" },
+                                    { id: 4, name: "Lisa Wang", department: "Engineering" }
+                                ]
+                            },
+                            {
+                                name: "access_logs",
+                                columns: ["employee_id", "location", "access_time"],
+                                data: [
+                                    { employee_id: 2, location: "Server Room", access_time: "14:30" },
+                                    { employee_id: 4, location: "Server Room", access_time: "16:45" }
+                                ]
+                            }
+                        ]
+                    },
+                    hint: "Use JOIN: SELECT employees.name, access_logs.location FROM employees JOIN access_logs ON employees.id = access_logs.employee_id",
+                    correctPattern: /SELECT.*JOIN.*ON/i,
+                    concept: "JOIN operations",
+                    explanation: "Brilliant detective work! JOINs connect data from multiple tables using a common key (id = employee_id). This is how we relate different pieces of information."
+                },
+                {
+                    id: 3,
+                    title: "Case Closed!",
+                    story: "Final question: How many times did Sarah access the server? We need a COUNT!",
+                    database: {
+                        name: "access_logs",
+                        columns: ["employee_id", "location", "access_time"],
+                        data: [
+                            { employee_id: 2, location: "Server Room", access_time: "08:15" },
+                            { employee_id: 2, location: "Server Room", access_time: "10:30" },
+                            { employee_id: 1, location: "Conference Room", access_time: "11:00" },
+                            { employee_id: 2, location: "Server Room", access_time: "14:20" },
+                            { employee_id: 4, location: "Server Room", access_time: "15:45" },
+                            { employee_id: 2, location: "Server Room", access_time: "16:10" },
+                            { employee_id: 2, location: "Server Room", access_time: "18:30" },
+                            { employee_id: 1, location: "Office", access_time: "19:00" }
+                        ]
+                    },
+                    hint: "Use COUNT: SELECT COUNT(*) FROM access_logs WHERE employee_id = 2",
+                    correctPattern: /COUNT/i,
+                    concept: "Aggregate functions",
+                    explanation: "Case solved! You used COUNT, an aggregate function that helps us summarize data. Sarah (employee_id 2) accessed the server 5 times that day. Mystery solved!"
+                }
+            ];
+
+            const executeQuery = (query, level) => {
+                try {
+                    const normalizedQuery = query.trim().toUpperCase();
+                    
+                    // Handle COUNT queries
+                    if (normalizedQuery.includes('COUNT')) {
+                        const whereMatch = query.match(/WHERE\s+(\w+)\s*=\s*(\d+)/i);
+                        if (level.database.tables) {
+                            const table = level.database.tables.find(t => query.toLowerCase().includes(t.name.toLowerCase()));
+                            if (table && whereMatch) {
+                                const [, column, value] = whereMatch;
+                                const filtered = table.data.filter(row => row[column] == value);
+                                return { columns: ['COUNT(*)'], data: [{ 'COUNT(*)': filtered.length }] };
+                            }
+                        } else {
+                            if (whereMatch) {
+                                const [, column, value] = whereMatch;
+                                const filtered = level.database.data.filter(row => row[column] == value);
+                                return { columns: ['COUNT(*)'], data: [{ 'COUNT(*)': filtered.length }] };
+                            }
+                            return { columns: ['COUNT(*)'], data: [{ 'COUNT(*)': level.database.data.length }] };
+                        }
+                    }
+                    
+                    // Handle JOIN queries
+                    if (normalizedQuery.includes('JOIN')) {
+                        const tables = level.database.tables;
+                        if (tables && tables.length >= 2) {
+                            const employees = tables.find(t => t.name === 'employees');
+                            const accessLogs = tables.find(t => t.name === 'access_logs');
+                            
+                            if (employees && accessLogs) {
+                                const joined = accessLogs.data.map(log => {
+                                    const employee = employees.data.find(emp => emp.id === log.employee_id);
+                                    return {
+                                        name: employee ? employee.name : 'Unknown',
+                                        location: log.location,
+                                        access_time: log.access_time
+                                    };
+                                });
+                                return { columns: ['name', 'location', 'access_time'], data: joined };
+                            }
+                        }
+                    }
+                    
+                    // Handle basic SELECT queries
+                    const fromMatch = query.match(/FROM\s+(\w+)/i);
+                    if (!fromMatch) return null;
+                    
+                    const tableName = fromMatch[1].toLowerCase();
+                    let data;
+                    let columns;
+                    
+                    if (level.database.tables) {
+                        const table = level.database.tables.find(t => t.name.toLowerCase() === tableName);
+                        if (!table) return null;
+                        data = table.data;
+                        columns = table.columns;
+                    } else {
+                        data = level.database.data;
+                        columns = level.database.columns;
+                    }
+                    
+                    // Handle WHERE clause
+                    const whereMatch = query.match(/WHERE\s+(\w+)\s*=\s*'([^']+)'|WHERE\s+(\w+)\s*=\s*(\d+)/i);
+                    if (whereMatch) {
+                        const column = whereMatch[1] || whereMatch[3];
+                        const value = whereMatch[2] || whereMatch[4];
+                        data = data.filter(row => String(row[column]) === String(value));
+                    }
+                    
+                    // Handle SELECT columns
+                    const selectMatch = query.match(/SELECT\s+(.+?)\s+FROM/i);
+                    if (selectMatch) {
+                        const selectPart = selectMatch[1].trim();
+                        if (selectPart !== '*') {
+                            const selectedColumns = selectPart.split(',').map(col => col.trim());
+                            columns = selectedColumns;
+                            data = data.map(row => {
+                                const newRow = {};
+                                selectedColumns.forEach(col => {
+                                    newRow[col] = row[col];
+                                });
+                                return newRow;
+                            });
+                        }
+                    }
+                    
+                    return { columns, data };
+                } catch (error) {
+                    return null;
+                }
+            };
+
+            const checkQuery = () => {
+                const level = levels[currentLevel];
+                
+                const result = executeQuery(playerQuery, level);
+                setQueryResult(result);
+                
+                if (level.correctPattern.test(playerQuery)) {
+                    setFeedback({ success: true, message: level.explanation });
+                    if (!completedLevels.includes(currentLevel)) {
+                        setCompletedLevels([...completedLevels, currentLevel]);
+                    }
+                } else {
+                    setFeedback({ success: false, message: "Not quite right. Check the hint and try again!" });
+                }
+            };
+
+            const nextLevel = () => {
+                if (currentLevel < levels.length - 1) {
+                    setCurrentLevel(currentLevel + 1);
+                    setPlayerQuery('');
+                    setFeedback(null);
+                    setQueryResult(null);
+                }
+            };
+
+            const level = levels[currentLevel];
+            const isCompleted = completedLevels.includes(currentLevel);
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white p-8">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="flex items-center gap-3 mb-8">
+                            <div className="w-10 h-10 text-blue-400"><Database /></div>
+                            <h1 className="text-4xl font-bold">Database Detective</h1>
+                        </div>
+
+                        <div className="bg-slate-800 rounded-lg p-6 mb-6 border border-blue-500">
+                            <div className="flex justify-between items-start mb-4">
+                                <h2 className="text-2xl font-semibold text-blue-300">
+                                    Case {currentLevel + 1}: {level.title}
+                                </h2>
+                                <span className="bg-blue-600 px-3 py-1 rounded text-sm">
+                                    {level.concept}
+                                </span>
+                            </div>
+                            <p className="text-gray-300 text-lg leading-relaxed">{level.story}</p>
+                        </div>
+
+                        <div className="bg-slate-800 rounded-lg p-6 mb-6 border border-slate-700">
+                            <h3 className="text-lg font-semibold mb-4 text-blue-300">Database: {level.database.name}</h3>
+                            
+                            {level.database.tables ? (
+                                <div className="space-y-6">
+                                    {level.database.tables.map((table, tableIdx) => (
+                                        <div key={tableIdx}>
+                                            <h4 className="text-md font-semibold mb-2 text-yellow-400">{table.name}</h4>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-sm">
+                                                    <thead>
+                                                        <tr className="border-b border-slate-600">
+                                                            {table.columns.map((col, i) => (
+                                                                <th key={i} className="text-left p-2 text-blue-400">{col}</th>
+                                                            ))}
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {table.data.map((row, i) => (
+                                                            <tr key={i} className="border-b border-slate-700">
+                                                                {table.columns.map((col, j) => (
+                                                                    <td key={j} className="p-2 text-gray-300">{row[col]}</td>
+                                                                ))}
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-slate-600">
+                                                {level.database.columns.map((col, i) => (
+                                                    <th key={i} className="text-left p-2 text-blue-400">{col}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {level.database.data.map((row, i) => (
+                                                <tr key={i} className="border-b border-slate-700">
+                                                    {level.database.columns.map((col, j) => (
+                                                        <td key={j} className="p-2 text-gray-300">{row[col] || row[Object.keys(row)[j]]}</td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="bg-slate-800 rounded-lg p-6 mb-6 border border-slate-700">
+                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                                <div className="w-5 h-5 text-blue-400"><Search /></div>
+                                Your Query
+                            </h3>
+                            <textarea
+                                value={playerQuery}
+                                onChange={(e) => setPlayerQuery(e.target.value)}
+                                className="w-full bg-slate-900 text-green-400 font-mono p-4 rounded border border-slate-600 focus:border-blue-500 outline-none resize-none"
+                                rows="3"
+                                placeholder="Type your SQL query here..."
+                            />
+                            <button
+                                onClick={checkQuery}
+                                className="mt-4 bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-semibold transition"
+                            >
+                                Execute Query
+                            </button>
+                            
+                            <details className="mt-4">
+                                <summary className="text-yellow-400 cursor-pointer hover:text-yellow-300">
+                                    💡 Need a hint?
+                                </summary>
+                                <p className="mt-2 text-gray-400 font-mono text-sm bg-slate-900 p-3 rounded">
+                                    {level.hint}
+                                </p>
+                            </details>
+                        </div>
+
+                        {queryResult && (
+                            <div className="bg-slate-800 rounded-lg p-6 mb-6 border border-green-500">
+                                <h3 className="text-lg font-semibold mb-3 text-green-400">Query Results</h3>
+                                {queryResult.data.length > 0 ? (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="border-b border-slate-600">
+                                                    {queryResult.columns.map((col, i) => (
+                                                        <th key={i} className="text-left p-2 text-green-400">{col}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {queryResult.data.map((row, i) => (
+                                                    <tr key={i} className="border-b border-slate-700">
+                                                        {queryResult.columns.map((col, j) => (
+                                                            <td key={j} className="p-2 text-gray-300">{row[col]}</td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-400">No results found.</p>
+                                )}
+                            </div>
+                        )}
+
+                        {feedback && (
+                            <div className={`rounded-lg p-6 mb-6 border ${
+                                feedback.success 
+                                    ? 'bg-green-900/30 border-green-500' 
+                                    : 'bg-red-900/30 border-red-500'
+                            }`}>
+                                <div className="flex items-start gap-3">
+                                    {feedback.success ? (
+                                        <div className="w-6 h-6 text-green-400 flex-shrink-0"><CheckCircle /></div>
+                                    ) : (
+                                        <div className="w-6 h-6 text-red-400 flex-shrink-0"><XCircle /></div>
+                                    )}
+                                    <div className="flex-1">
+                                        <p className="text-lg">{feedback.message}</p>
+                                        {isCompleted && currentLevel < levels.length - 1 && (
+                                            <button
+                                                onClick={nextLevel}
+                                                className="mt-4 bg-green-600 hover:bg-green-700 px-6 py-2 rounded font-semibold transition flex items-center gap-2"
+                                            >
+                                                Next Case <div className="w-4 h-4"><ArrowRight /></div>
+                                            </button>
+                                        )}
+                                        {isCompleted && currentLevel === levels.length - 1 && (
+                                            <div className="mt-4 text-green-300">
+                                                🎉 Congratulations, Detective! You've mastered the basics of SQL and solved all the cases!
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex gap-2">
+                            {levels.map((_, i) => (
+                                <div
+                                    key={i}
+                                    className={`h-2 flex-1 rounded ${
+                                        completedLevels.includes(i)
+                                            ? 'bg-green-500'
+                                            : i === currentLevel
+                                            ? 'bg-blue-500'
+                                            : 'bg-slate-700'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<DatabaseDetective />, document.getElementById('root'));
+    </script>
+</body>
+</html>
