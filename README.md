@@ -246,7 +246,7 @@ Found a bug? Have ideas for new cases? Want to add more SQL concepts?
 
 ### Version 3.0: "Return of the Query"
 - [ ] Multiplayer mode (race to solve cases)
-- [ ] Real database integration (PostgreSQL, MySQL)
+- [ ] Real database integration (Oracle, PostgreSQL, MySQL)
 - [ ] Achievement system (unlock detective badges)
 - [ ] Story branching (your queries affect the plot)
 - [ ] Sound effects (dramatic music when JOINing tables)
